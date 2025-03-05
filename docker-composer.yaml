@@ -21,30 +21,25 @@ services:
       - "coolify.application=true"  # Marks this service for Coolify
 
   wordpress:
-  image: wordpress:latest
-  depends_on:
-    - db
-    - redis
-  environment:
-    WORDPRESS_DB_HOST: db
-    WORDPRESS_DB_USER: wordpress
-    WORDPRESS_DB_PASSWORD: wordpress_pass
-    WORDPRESS_DB_NAME: wordpress
-    # Optionally add Redis host configuration
-    WORDPRESS_REDIS_HOST: redis
-
-    
-  restart: always
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost"]
-    interval: 5s
-    timeout: 5s
-    retries: 10
-    start_period: 5s
-  volumes:
-    - wordpress_data:/var/www/html
-  labels:
-    - "coolify.application=true"
+    image: wordpress:latest
+    depends_on:
+      - db
+      - redis    # Added Redis dependency (if applicable)
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress_pass
+      WORDPRESS_DB_NAME: wordpress
+      # You can add additional environment variables if using Redis for caching
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    labels:
+      - "coolify.application=true"
 
   redis:
     image: redis:alpine
@@ -60,4 +55,3 @@ services:
 volumes:
   db_data:
   wordpress_data:
-  
