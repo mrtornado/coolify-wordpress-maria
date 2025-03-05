@@ -3,9 +3,6 @@ version: '3'
 services:
   litespeed:
     image: litespeedtech/openlitespeed:latest
-    ports:
-      - 80:80
-      - 443:443
     volumes:
       - ./lsws/conf:/usr/local/lsws/conf
       - ./lsws/logs:/usr/local/lsws/logs
