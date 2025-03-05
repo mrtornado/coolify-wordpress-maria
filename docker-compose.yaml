@@ -1,55 +1,58 @@
 version: '3.8'
 
 services:
-  wordpress:
-    image: bitnami/wordpress-nginx:latest
-    restart: unless-stopped
-    environment:
-      WORDPRESS_DATABASE_HOST: db
-      WORDPRESS_DATABASE_USER: wordpress
-      WORDPRESS_DATABASE_PASSWORD: wordpress_pass
-      WORDPRESS_DATABASE_NAME: wordpress
-      WORDPRESS_BLOG_NAME: "My Coolify Site"
-      ALLOW_EMPTY_PASSWORD: "no"
-      NGINX_HTTP_PORT_NUMBER: 8080  # ✅ Fixes Traefik routing
-      PHP_FPM_LISTEN_PORT: 9000  # ✅ Ensures PHP-FPM is properly configured
+  litespeed:
+    image: litespeedtech/openlitespeed-wordpress:latest
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - wordpress_data:/bitnami/wordpress
+      - wordpress:/var/www/vhosts/wordpress/
+      - lsws-config:/usr/local/lsws/conf/
+    environment:
+      - VIRTUAL_HOST=${COOLIFY_DOMAIN}  # Coolify will inject the domain
+      - WORDPRESS_DB_HOST=mariadb
+      - WORDPRESS_DB_USER=${DB_USER}
+      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}
+      - WORDPRESS_DB_NAME=${DB_NAME}
+      - WORDPRESS_CONFIG_EXTRA=|
+          define('WP_REDIS_HOST', 'redis');
+          define('WP_REDIS_PORT', 6379);
+          define('WP_CACHE', true);
+    networks:
+      - coolify-network
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  db:
-    image: mariadb:10.6
+      - mariadb
+      - redis
     restart: unless-stopped
-    environment:
-      MARIADB_DATABASE: wordpress
-      MARIADB_USER: wordpress
-      MARIADB_PASSWORD: wordpress_pass
-      MARIADB_ROOT_PASSWORD: root_password
+
+  mariadb:
+    image: mariadb:latest
     volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
-      interval: 10s
-      timeout: 5s
-      retries: 10  # 🚀 Increased retries to avoid "unhealthy" errors in Coolify
+      - mariadb-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    networks:
+      - coolify-network
+    restart: unless-stopped
 
   redis:
-    image: redis:alpine
-    restart: unless-stopped
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    image: redis:latest
     volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - redis-data:/data
+    networks:
+      - coolify-network
+    restart: unless-stopped
 
 volumes:
-  wordpress_data:
-  db_data:
-  redis_data:
+  wordpress:
+  lsws-config:
+  mariadb-data:
+  redis-data:
+
+networks:
+  coolify-network:
+    external: true
