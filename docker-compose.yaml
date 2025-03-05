@@ -18,16 +18,26 @@ services:
   nginx:
     image: nginx:alpine
     restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./nginx-conf:/etc/nginx/conf.d
     depends_on:
       - wordpress
-    volumes:
-      - type: bind
-        source: ./nginx/default.conf
-        target: /etc/nginx/conf.d/default.conf
-        read_only: true
-      - wordpress_data:/var/www/html
-    labels:
-      - "coolify.application=true"
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
   db:
     image: mariadb:10.6

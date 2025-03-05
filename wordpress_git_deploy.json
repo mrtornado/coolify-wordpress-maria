@@ -8,7 +8,7 @@
   "domains": "https://dodos.vizo.live",
   "ports_exposes": "80",
   "name": "wordpress-redis-git",
-  "docker_compose_location": "docker-composer.yaml",
+  "docker_compose_location": "docker-compose.yaml",
   "instant_deploy": true,
   "limits_memory": "1024MB",
   "limits_cpus": "1"
