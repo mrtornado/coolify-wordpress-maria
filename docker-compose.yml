@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   wordpress:
@@ -6,14 +6,13 @@ services:
     restart: unless-stopped
     environment:
       - WORDPRESS_DB_HOST=db
-      - WORDPRESS_DB_USER=wordpress
-      - WORDPRESS_DB_PASSWORD=wordpress_password
-      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_DB_USER=${WP_DB_USER}
+      - WORDPRESS_DB_PASSWORD=${WP_DB_PASSWORD}
+      - WORDPRESS_DB_NAME=${WP_DB_NAME}
       - WORDPRESS_CONFIG_EXTRA=
         define('WP_REDIS_HOST', 'redis');
         define('WP_CACHE', true);
         define('WP_REDIS_PORT', 6379);
-        define('WP_REDIS_PASSWORD', '');
         define('WP_REDIS_TIMEOUT', 1);
         define('WP_REDIS_READ_TIMEOUT', 1);
     volumes:
@@ -39,10 +38,10 @@ services:
     image: mariadb:10.6
     restart: unless-stopped
     environment:
-      - MYSQL_DATABASE=wordpress
-      - MYSQL_USER=wordpress
-      - MYSQL_PASSWORD=wordpress_password
-      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=${WP_DB_NAME}
+      - MYSQL_USER=${WP_DB_USER}
+      - MYSQL_PASSWORD=${WP_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -62,8 +61,6 @@ services:
   nginx:
     image: nginx:alpine
     restart: unless-stopped
-    ports:
-      - "80:80"
     volumes:
       - wordpress_data:/var/www/html
       - ./nginx:/etc/nginx/conf.d
@@ -82,6 +79,14 @@ services:
         reservations:
           cpus: '0.1'
           memory: 64M
+    labels:
+      - "coolify.application=true"  # Marks it as a Coolify application
+      - "traefik.enable=true"
+      - "traefik.http.routers.${WP_DOMAIN}.rule=Host(`${WP_DOMAIN}`)"
+      - "traefik.http.routers.${WP_DOMAIN}.entryPoints=web"
+      - "traefik.http.routers.${WP_DOMAIN}-secure.rule=Host(`${WP_DOMAIN}`)"
+      - "traefik.http.routers.${WP_DOMAIN}-secure.entryPoints=websecure"
+      - "traefik.http.routers.${WP_DOMAIN}-secure.tls=true"
 
   redis:
     image: redis:alpine
@@ -102,17 +107,6 @@ services:
         reservations:
           cpus: '0.05'
           memory: 64M
-
-  redis-plugin-installer:
-    build: ./plugin-installer
-    restart: "no"
-    depends_on:
-      - wordpress
-      - redis
-    environment:
-      - WORDPRESS_PATH=/var/www/html
-    volumes:
-      - wordpress_data:/var/www/html
 
 volumes:
   wordpress_data:
