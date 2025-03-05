@@ -4,20 +4,8 @@ services:
   wordpress:
     image: litespeedtech/openlitespeed:latest
     restart: unless-stopped
-    environment:
-      LITESPEED_ADMIN_USER: "admin"
-      LITESPEED_ADMIN_PASS: "password"
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress_pass
-      WORDPRESS_DB_NAME: wordpress
-      TRUSTED_PROXY_IPS: "172.16.0.0/12"  # ✅ Fix redirect issues
-      WP_FORCE_SSL: "true"  # ✅ Force SSL correctly
-      WP_HOME: "https://dodos.vizo.live"
-      WP_SITEURL: "https://dodos.vizo.live"
     volumes:
       - wordpress_data:/var/www/html
-      - litespeed_data:/usr/local/lsws
     depends_on:
       - db
       - redis
@@ -44,4 +32,3 @@ volumes:
   wordpress_data:
   db_data:
   redis_data:
-  litespeed_data:
