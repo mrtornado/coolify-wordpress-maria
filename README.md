@@ -1,5 +1,5 @@
 # WordPress with Nginx, MariaDB, and Redis Object Cache
-
+None
 This is a complete WordPress deployment setup using:
 
 - WordPress (PHP-FPM Alpine)
