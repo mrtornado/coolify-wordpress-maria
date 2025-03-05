@@ -10,6 +10,12 @@ services:
       WORDPRESS_DB_PASSWORD: wordpress_pass
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_TABLE_PREFIX: "wp_"
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_REDIS_HOST', 'redis'); 
+        define('WP_REDIS_PORT', 6379);
+        define('WP_REDIS_TIMEOUT', 1);
+        define('WP_REDIS_READ_TIMEOUT', 1);
+        define('WP_CACHE', true);
     volumes:
       - wordpress_data:/var/www/html
     depends_on:
@@ -32,7 +38,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
       interval: 10s
       timeout: 5s
-      retries: 10  # ✅ Fixes Coolify "unhealthy" DB issue
+      retries: 10
 
   redis:
     image: redis:alpine
