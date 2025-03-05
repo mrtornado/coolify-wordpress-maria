@@ -1,5 +1,5 @@
-# Stage 1: Base LiteSpeed + PHP Image
-FROM litespeedtech/openlitespeed:latest AS base
+# Stage 1: Base Nginx + PHP Image
+FROM nginx:latest AS base
 
 # Install required dependencies
 RUN apt-get update && apt-get install -y \
@@ -19,31 +19,20 @@ RUN apt-get update && apt-get install -y \
     php-soap \
     php-gd \
     php-redis \
+    wget \
+    unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download and place httpd_config.conf
-RUN curl -o /usr/local/lsws/conf/httpd_config.conf \
-    https://raw.githubusercontent.com/mrtornado/coolify-wordpress-maria/main/test/litespeed.conf
+# Ensure necessary directories exist
+RUN mkdir -p /var/www/html /var/log/nginx /run/php && \
+    chown -R www-data:www-data /var/www/html
 
-# Ensure the directory for virtual host configs exists
-RUN mkdir -p /usr/local/lsws/conf/vhosts/wordpress/
+# Download and place Nginx config
+RUN wget -O /etc/nginx/nginx.conf \
+    https://raw.githubusercontent.com/mrtornado/coolify-wordpress-maria/main/test/nginx.conf
 
-# Download and place vhconf.conf for WordPress Virtual Host
-RUN curl -o /usr/local/lsws/conf/vhosts/wordpress/vhconf.conf \
-    https://raw.githubusercontent.com/mrtornado/coolify-wordpress-maria/main/test/vhconf.conf
-
-# Set permissions (if necessary)
-RUN chmod 644 /usr/local/lsws/conf/httpd_config.conf
-
-# Start LiteSpeed service
-CMD ["/usr/local/lsws/bin/lswsctrl", "start"]
-
-# Create directories and set permissions
-RUN mkdir -p /var/www/html && \
-    chown -R nobody:nogroup /var/www/html
-
-# Expose necessary ports
-EXPOSE 80 443
+# Set permissions
+RUN chmod 644 /etc/nginx/nginx.conf
 
 # Stage 2: WordPress Installation
 FROM base AS wordpress
@@ -51,17 +40,17 @@ FROM base AS wordpress
 WORKDIR /var/www/html
 
 # Download and setup WordPress
-RUN curl -O https://wordpress.org/latest.tar.gz && \
+RUN wget -O latest.tar.gz https://wordpress.org/latest.tar.gz && \
     tar -xzf latest.tar.gz --strip-components=1 && \
     rm latest.tar.gz
 
 # Set file permissions
-RUN chown -R nobody:nogroup /var/www/html && \
+RUN chown -R www-data:www-data /var/www/html && \
     find . -type d -exec chmod 755 {} \; && \
     find . -type f -exec chmod 644 {} \;
 
 # Start all necessary services
 CMD service mariadb start && \
     service redis-server start && \
-    service lsws start && \
-    tail -f /usr/local/lsws/logs/error.log
+    php-fpm -D && \
+    nginx -g "daemon off;"
