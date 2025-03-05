@@ -18,8 +18,6 @@ services:
   nginx:
     image: nginx:alpine
     restart: unless-stopped
-    ports:
-      - "80:80"
     volumes:
       - wordpress_data:/var/www/html
       - ./nginx-conf:/etc/nginx/conf.d
