@@ -23,7 +23,7 @@ services:
   wordpress:
     build:
       context: .
-      dockerfile: Dockerfile-wordpress
+      dockerfile: ./wordpress/Dockerfile
     depends_on:
       - db
       - redis
