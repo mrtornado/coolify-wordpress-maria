@@ -2,83 +2,38 @@ version: '3.8'
 
 services:
   wordpress:
-    build: ./wordpress
-    restart: unless-stopped
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: WP_DB_USER
-      WORDPRESS_DB_PASSWORD: WP_DB_PASSWORD
-      WORDPRESS_DB_NAME: WP_DB_NAME
-      WORDPRESS_CONFIG_EXTRA: |
-        define('WP_REDIS_HOST', 'redis');
-        define('WP_CACHE', true);
-        define('WP_REDIS_PORT', 6379);
-        define('WP_REDIS_TIMEOUT', 1);
-        define('WP_REDIS_READ_TIMEOUT', 1);
-    volumes:
-      - wordpress_data:/var/www/html
+    image: wordpress:latest
     depends_on:
       - db
       - redis
-    healthcheck:
-      test: ["CMD", "php", "-v"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WP_DB_NAME}
+      WORDPRESS_DB_USER: ${WP_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
+    volumes:
+      - "wp_data:/var/www/html"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wp-site.rule=Host(`${WP_DOMAIN}`)"
+      - "traefik.http.routers.wp-site-secure.rule=Host(`${WP_DOMAIN}`)"
+      - "traefik.http.routers.wp-site-secure.entryPoints=websecure"
+      - "traefik.http.routers.wp-site-secure.tls=true"
 
   db:
-    image: mariadb:10.6
-    restart: unless-stopped
+    image: mysql:5.7
     environment:
-      MYSQL_DATABASE: WP_DB_NAME
-      MYSQL_USER: WP_DB_USER
-      MYSQL_PASSWORD: WP_DB_PASSWORD
-      MYSQL_ROOT_PASSWORD: MYSQL_ROOT_PASSWORD
+      MYSQL_DATABASE: ${WP_DB_NAME}
+      MYSQL_USER: ${WP_DB_USER}
+      MYSQL_PASSWORD: ${WP_DB_PASSWORD}
+      MYSQL_RANDOM_ROOT_PASSWORD: '1'
     volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
+      - "db_data:/var/lib/mysql"
 
   redis:
-    image: redis:alpine
-    restart: unless-stopped
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 256M
-        reservations:
-          cpus: '0.05'
-          memory: 64M
+    image: redis:6-alpine
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
 
 volumes:
-  wordpress_data:
+  wp_data:
   db_data:
-  redis_data:
