@@ -32,6 +32,7 @@ services:
     WORDPRESS_DB_NAME: wordpress
     # Optionally add Redis host configuration
     WORDPRESS_REDIS_HOST: redis
+
     
   restart: always
   healthcheck:
