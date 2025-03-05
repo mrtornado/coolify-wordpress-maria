@@ -2,9 +2,11 @@ version: '3.8'
 
 services:
   wordpress:
-    image: wordpress:php8.3-fpm
+    image: litespeedtech/openlitespeed:latest
     restart: unless-stopped
     environment:
+      LITESPEED_ADMIN_USER: "admin"
+      LITESPEED_ADMIN_PASS: "password"
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress_pass
@@ -14,28 +16,6 @@ services:
     depends_on:
       - db
       - redis
-
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    volumes:
-      - wordpress_data:/var/www/html
-      - ./nginx-conf/default.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - wordpress
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
 
   db:
     image: mariadb:10.6
