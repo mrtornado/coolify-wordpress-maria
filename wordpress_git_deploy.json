@@ -5,9 +5,10 @@
   "git_repository": "https://github.com/mrtornado/coolify-wordpress-maria",
   "git_branch": "main",
   "build_pack": "dockercompose",
-  "build_command": "mkdir -p /artifacts && cd /artifacts && git clone $GIT_REPOSITORY .",
+  "domains": "https://dodos.vizo.live",
   "ports_exposes": "80",
-  "name": "wordpress-nginx-redis-git",
+  "name": "wordpress-redis-git",
+  "docker_compose_location": "docker-composer.yaml",
   "instant_deploy": true,
   "limits_memory": "1024MB",
   "limits_cpus": "1"
