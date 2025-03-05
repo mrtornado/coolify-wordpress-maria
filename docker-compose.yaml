@@ -1,47 +1,43 @@
-version: '3.8'
+version: '3'
 
 services:
   litespeed:
-    image: litespeedtech/litespeed-php:latest
-    restart: always
-    environment:
-      - TZ=UTC
-      - DOMAIN=example.com
-      - WORDPRESS_DB_HOST=mariadb
-      - WORDPRESS_DB_NAME=wordpress
-      - WORDPRESS_DB_USER=wpuser
-      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD:-wppassword}
-      - WORDPRESS_TABLE_PREFIX=wp_
-      - REDIS_HOST=redis
+    image: litespeedtech/openlitespeed:latest
     ports:
-      - "80:80"
-      - "443:443"
+      - 80:80
+      - 443:443
     volumes:
-      - ./html:/var/www/html
-      - ./lsws/logs:/usr/local/lsws/logs
       - ./lsws/conf:/usr/local/lsws/conf
+      - ./lsws/logs:/usr/local/lsws/logs
+      - ./html:/var/www/vhosts
+    environment:
+      TZ: ${TZ:-UTC}
+      DOMAIN: ${DOMAIN:-example.com}
+    restart: always
     depends_on:
       - mariadb
       - redis
 
   mariadb:
     image: mariadb:10.6
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
-      - MYSQL_DATABASE=wordpress
-      - MYSQL_USER=wpuser
-      - MYSQL_PASSWORD=${WORDPRESS_DB_PASSWORD:-wppassword}
     volumes:
       - db_data:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-wordpress}
+      MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_password}
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: always
 
   redis:
-    image: redis:6.2-alpine
-    restart: always
+    image: redis:alpine
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: always
 
 volumes:
   db_data:
   redis_data:
+
