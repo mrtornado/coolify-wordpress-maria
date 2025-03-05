@@ -2,55 +2,46 @@ version: '3.8'
 
 services:
   litespeed:
-    image: litespeedtech/openlitespeed:latest
-    volumes:
-      - wordpress:/var/www/vhosts/localhost/html/
-      - lsws-config:/usr/local/lsws/conf/
+    image: litespeedtech/litespeed-php:latest
+    restart: always
     environment:
-      - VIRTUAL_HOST=${COOLIFY_DOMAIN}
+      - TZ=UTC
+      - DOMAIN=example.com
       - WORDPRESS_DB_HOST=mariadb
-      - WORDPRESS_DB_USER=${DB_USER}
-      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}
-      - WORDPRESS_DB_NAME=${DB_NAME}
-      - WORDPRESS_CONFIG_EXTRA=|
-          define('WP_REDIS_HOST', 'redis');
-          define('WP_REDIS_PORT', 6379);
-          define('WP_CACHE', true);
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_DB_USER=wpuser
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD:-wppassword}
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - REDIS_HOST=redis
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./html:/var/www/html
+      - ./lsws/logs:/usr/local/lsws/logs
+      - ./lsws/conf:/usr/local/lsws/conf
     depends_on:
       - mariadb
       - redis
-    restart: unless-stopped
-    command: 
-      - /bin/bash
-      - -c
-      - |
-        if [ ! -f /var/www/vhosts/localhost/html/wp-config.php ]; then
-          wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz
-          tar -xzf /tmp/wordpress.tar.gz -C /var/www/vhosts/localhost/html/ --strip-components=1
-          chown -R nobody:nogroup /var/www/vhosts/localhost/html/
-        fi
-        /usr/local/lsws/bin/lswsctrl start
-        tail -F /usr/local/lsws/logs/error.log
 
   mariadb:
-    image: mariadb:latest
-    volumes:
-      - mariadb-data:/var/lib/mysql
+    image: mariadb:10.6
+    restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-    restart: unless-stopped
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=wpuser
+      - MYSQL_PASSWORD=${WORDPRESS_DB_PASSWORD:-wppassword}
+    volumes:
+      - db_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
   redis:
-    image: redis:latest
+    image: redis:6.2-alpine
+    restart: always
     volumes:
-      - redis-data:/data
-    restart: unless-stopped
+      - redis_data:/data
 
 volumes:
-  wordpress:
-  lsws-config:
-  mariadb-data:
-  redis-data:
+  db_data:
+  redis_data:
