@@ -19,8 +19,6 @@ services:
           define('WP_REDIS_HOST', 'redis');
           define('WP_REDIS_PORT', 6379);
           define('WP_CACHE', true);
-    networks:
-      - coolify-network
     depends_on:
       - mariadb
       - redis
@@ -29,26 +27,13 @@ services:
       - /bin/bash
       - -c
       - |
-        wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz
-        tar -xzf /tmp/wordpress.tar.gz -C /var/www/vhosts/localhost/html/ --strip-components=1
-        chown -R nobody:nogroup /var/www/vhosts/localhost/html/
+        if [ ! -f /var/www/vhosts/localhost/html/wp-config.php ]; then
+          wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz
+          tar -xzf /tmp/wordpress.tar.gz -C /var/www/vhosts/localhost/html/ --strip-components=1
+          chown -R nobody:nogroup /var/www/vhosts/localhost/html/
+        fi
         /usr/local/lsws/bin/lswsctrl start
         tail -F /usr/local/lsws/logs/error.log
-
-  wordpress:
-    image: wordpress:php8.2-apache
-    volumes:
-      - wordpress:/var/www/html
-    environment:
-      - WORDPRESS_DB_HOST=mariadb
-      - WORDPRESS_DB_USER=${DB_USER}
-      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}
-      - WORDPRESS_DB_NAME=${DB_NAME}
-    networks:
-      - coolify-network
-    restart: unless-stopped
-    depends_on:
-      - mariadb
 
   mariadb:
     image: mariadb:latest
@@ -59,16 +44,12 @@ services:
       - MYSQL_DATABASE=${DB_NAME}
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASSWORD}
-    networks:
-      - coolify-network
     restart: unless-stopped
 
   redis:
     image: redis:latest
     volumes:
       - redis-data:/data
-    networks:
-      - coolify-network
     restart: unless-stopped
 
 volumes:
@@ -76,7 +57,3 @@ volumes:
   lsws-config:
   mariadb-data:
   redis-data:
-
-networks:
-  coolify-network:
-    external: true
