@@ -5,7 +5,6 @@ FROM litespeedtech/openlitespeed:latest AS base
 RUN apt-get update && apt-get install -y \
     mariadb-server \
     redis-server \
-    wget \
     php \
     php-fpm \
     php-cli \
@@ -22,9 +21,16 @@ RUN apt-get update && apt-get install -y \
     php-redis \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download `litespeed.conf` from GitHub
-RUN wget -O /usr/local/lsws/conf/httpd_config.conf \
+# Download and place httpd_config.conf
+RUN curl -o /usr/local/lsws/conf/httpd_config.conf \
     https://raw.githubusercontent.com/mrtornado/coolify-wordpress-maria/main/test/litespeed.conf
+
+# Ensure the directory for virtual host configs exists
+RUN mkdir -p /usr/local/lsws/conf/vhosts/wordpress/
+
+# Download and place vhconf.conf for WordPress Virtual Host
+RUN curl -o /usr/local/lsws/conf/vhosts/wordpress/vhconf.conf \
+    https://raw.githubusercontent.com/mrtornado/coolify-wordpress-maria/main/test/vhconf.conf
 
 # Set permissions (if necessary)
 RUN chmod 644 /usr/local/lsws/conf/httpd_config.conf
@@ -53,9 +59,6 @@ RUN curl -O https://wordpress.org/latest.tar.gz && \
 RUN chown -R nobody:nogroup /var/www/html && \
     find . -type d -exec chmod 755 {} \; && \
     find . -type f -exec chmod 644 {} \;
-
-# Copy LiteSpeed configurations
-COPY /config/litespeed.conf /usr/local/lsws/conf/httpd_config.conf
 
 # Start all necessary services
 CMD service mariadb start && \
