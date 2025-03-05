@@ -21,7 +21,7 @@ services:
     depends_on:
       - wordpress
     volumes:
-      - ./nginx/:/etc/nginx/conf.d/:ro
+      - ./nginx/:/etc/nginx/conf.d/
       - wordpress_data:/var/www/html
     labels:
       - "coolify.application=true"
