@@ -1,4 +1,4 @@
-FROM wordpress:php8.1-fpm
+FROM wordpress:php8.3-fpm
 
 # Install additional PHP extensions for Redis
 RUN set -ex; \
