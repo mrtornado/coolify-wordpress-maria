@@ -58,36 +58,6 @@ services:
           cpus: '0.1'
           memory: 128M
 
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    volumes:
-      - wordpress_data:/var/www/html
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - wordpress
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
-    labels:
-      - "coolify.application=true"  # Marks it as a Coolify application
-      - "traefik.enable=true"
-      - "traefik.http.routers.${WP_DOMAIN}.rule=Host(`${WP_DOMAIN}`)"
-      - "traefik.http.routers.${WP_DOMAIN}.entryPoints=web"
-      - "traefik.http.routers.${WP_DOMAIN}-secure.rule=Host(`${WP_DOMAIN}`)"
-      - "traefik.http.routers.${WP_DOMAIN}-secure.entryPoints=websecure"
-      - "traefik.http.routers.${WP_DOMAIN}-secure.tls=true"
-
   redis:
     image: redis:alpine
     restart: unless-stopped
