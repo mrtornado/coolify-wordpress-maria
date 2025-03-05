@@ -2,15 +2,15 @@ version: '3.8'
 
 services:
   litespeed:
-    image: litespeedtech/openlitespeed-wordpress:latest
+    image: litespeedtech/openlitespeed:latest
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - wordpress:/var/www/vhosts/wordpress/
+      - wordpress:/var/www/vhosts/localhost/html/
       - lsws-config:/usr/local/lsws/conf/
     environment:
-      - VIRTUAL_HOST=${COOLIFY_DOMAIN}  # Coolify will inject the domain
+      - VIRTUAL_HOST=${COOLIFY_DOMAIN}
       - WORDPRESS_DB_HOST=mariadb
       - WORDPRESS_DB_USER=${DB_USER}
       - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}
@@ -25,6 +25,30 @@ services:
       - mariadb
       - redis
     restart: unless-stopped
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz
+        tar -xzf /tmp/wordpress.tar.gz -C /var/www/vhosts/localhost/html/ --strip-components=1
+        chown -R nobody:nogroup /var/www/vhosts/localhost/html/
+        /usr/local/lsws/bin/lswsctrl start
+        tail -F /usr/local/lsws/logs/error.log
+
+  wordpress:
+    image: wordpress:php8.2-apache
+    volumes:
+      - wordpress:/var/www/html
+    environment:
+      - WORDPRESS_DB_HOST=mariadb
+      - WORDPRESS_DB_USER=${DB_USER}
+      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}
+      - WORDPRESS_DB_NAME=${DB_NAME}
+    networks:
+      - coolify-network
+    restart: unless-stopped
+    depends_on:
+      - mariadb
 
   mariadb:
     image: mariadb:latest
