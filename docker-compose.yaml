@@ -11,8 +11,8 @@ services:
       WORDPRESS_DATABASE_NAME: wordpress
       WORDPRESS_BLOG_NAME: "My Coolify Site"
       ALLOW_EMPTY_PASSWORD: "no"
-      NGINX_HTTP_PORT_NUMBER: 8080  # ✅ Fix: Listen on 8080 to work with Traefik
-      PHP_FPM_LISTEN_PORT: 9000  # ✅ Fix: Ensure PHP-FPM listens correctly
+      NGINX_HTTP_PORT_NUMBER: 8080  # ✅ Avoids conflicts with Traefik
+      PHP_FPM_LISTEN_PORT: 9000  # ✅ Ensures PHP-FPM works properly
     volumes:
       - wordpress_data:/bitnami/wordpress
     depends_on:
@@ -31,8 +31,8 @@ services:
       MARIADB_ROOT_PASSWORD: root_password
     volumes:
       - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    healthcheck:  # ✅ Fix for database "Unhealthy" issue
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,7 +43,7 @@ services:
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
-    healthcheck:
+    healthcheck:  # ✅ Ensures Redis is fully ready before WordPress starts
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
