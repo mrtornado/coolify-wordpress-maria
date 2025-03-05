@@ -16,10 +16,8 @@ services:
     volumes:
       - wordpress_data:/bitnami/wordpress
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
 
   db:
     image: mariadb:10.6
@@ -35,7 +33,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10  # 🚀 Increased retries so Coolify doesn't mark it as "unhealthy" too fast
 
   redis:
     image: redis:alpine
