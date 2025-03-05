@@ -1,40 +1,52 @@
-version: '3'
+version: '3.8'
 
 services:
-  litespeed:
-    image: litespeedtech/openlitespeed:latest
-    volumes:
-      - ./lsws/conf:/usr/local/lsws/conf
-      - ./lsws/logs:/usr/local/lsws/logs
-      - ./html:/var/www/vhosts
+  wordpress:
+    image: wordpress:latest
+    restart: unless-stopped
     environment:
-      TZ: ${TZ:-UTC}
-      DOMAIN: ${DOMAIN:-example.com}
-    restart: always
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress_pass
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: "wp_"
+    volumes:
+      - wordpress_data:/var/www/html
     depends_on:
-      - mariadb
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  mariadb:
+  db:
     image: mariadb:10.6
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress_pass
+      MARIADB_ROOT_PASSWORD: root_password
     volumes:
       - db_data:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
-      MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-wordpress}
-      MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
-      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_password}
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10  # ✅ Fixes Coolify "unhealthy" DB issue
 
   redis:
     image: redis:alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
-    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
+  wordpress_data:
   db_data:
   redis_data:
-
