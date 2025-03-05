@@ -17,3 +17,6 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html
+
+# Define healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD ["php", "-v"]
