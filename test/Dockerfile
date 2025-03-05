@@ -1,11 +1,12 @@
-# Stage 1: Base Nginx + PHP Image
-FROM nginx:latest AS base
+# Base image: Ubuntu with Nginx and PHP-FPM
+FROM ubuntu:latest
 
-# Install required dependencies
+# Install necessary packages
 RUN apt-get update && apt-get install -y \
+    nginx \
     mariadb-server \
     redis-server \
-    php \
+    wget \
     php-fpm \
     php-cli \
     php-curl \
@@ -19,38 +20,36 @@ RUN apt-get update && apt-get install -y \
     php-soap \
     php-gd \
     php-redis \
-    wget \
-    unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Ensure necessary directories exist
-RUN mkdir -p /var/www/html /var/log/nginx /run/php && \
-    chown -R www-data:www-data /var/www/html
+# Set up PHP-FPM pool configuration
+RUN mkdir -p /etc/php/7.4/fpm/pool.d
+COPY wordpress_pool.conf /etc/php/7.4/fpm/pool.d/
 
-# Download and place Nginx config
-RUN wget -O /etc/nginx/nginx.conf \
-    https://raw.githubusercontent.com/mrtornado/coolify-wordpress-maria/main/test/nginx.conf
+# Configure Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY default.conf /etc/nginx/sites-available/default
+RUN ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
-# Set permissions
-RUN chmod 644 /etc/nginx/nginx.conf
+# Ensure the web root exists
+RUN mkdir -p /var/www/html
 
-# Stage 2: WordPress Installation
-FROM base AS wordpress
-
+# Download and set up WordPress
 WORKDIR /var/www/html
+RUN wget -O wordpress.tar.gz https://wordpress.org/latest.tar.gz && \
+    tar -xzf wordpress.tar.gz --strip-components=1 && \
+    rm wordpress.tar.gz
 
-# Download and setup WordPress
-RUN wget -O latest.tar.gz https://wordpress.org/latest.tar.gz && \
-    tar -xzf latest.tar.gz --strip-components=1 && \
-    rm latest.tar.gz
-
-# Set file permissions
+# Set proper permissions
 RUN chown -R www-data:www-data /var/www/html && \
     find . -type d -exec chmod 755 {} \; && \
     find . -type f -exec chmod 644 {} \;
 
-# Start all necessary services
+# Expose required ports
+EXPOSE 80 443
+
+# Start services
 CMD service mariadb start && \
     service redis-server start && \
-    php-fpm -D && \
+    service php7.4-fpm start && \
     nginx -g "daemon off;"
