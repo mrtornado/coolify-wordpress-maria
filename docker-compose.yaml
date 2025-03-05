@@ -2,22 +2,18 @@ version: '3.8'
 
 services:
   wordpress:
-    image: litespeedtech/openlitespeed:latest
+    image: bitnami/wordpress-nginx:latest
     restart: unless-stopped
     environment:
-      LITESPEED_ADMIN_USER: "admin"
-      LITESPEED_ADMIN_PASS: "password"
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress_pass
-      WORDPRESS_DB_NAME: wordpress
-      WP_HOME: "https://dodos.vizo.live"
-      WP_SITEURL: "https://dodos.vizo.live"
-      LSAPI_AVOID_FORK: "true"
-      HTTP_X_FORWARDED_PROTO: "https"  # ✅ Fixes redirect loop behind Traefik
+      WORDPRESS_DATABASE_HOST: db
+      WORDPRESS_DATABASE_USER: wordpress
+      WORDPRESS_DATABASE_PASSWORD: wordpress_pass
+      WORDPRESS_DATABASE_NAME: wordpress
+      WORDPRESS_BLOG_NAME: "My Coolify Site"
+      ALLOW_EMPTY_PASSWORD: "no"
+      NGINX_HTTP_PORT_NUMBER: 8938  # ✅ Avoids conflicts with Traefik
     volumes:
-      - wordpress_data:/var/www/html
-      - litespeed_data:/usr/local/lsws
+      - wordpress_data:/bitnami/wordpress
     depends_on:
       - db
       - redis
@@ -26,10 +22,10 @@ services:
     image: mariadb:10.6
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress_pass
-      MYSQL_ROOT_PASSWORD: root_password
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress_pass
+      MARIADB_ROOT_PASSWORD: root_password
     volumes:
       - db_data:/var/lib/mysql
 
@@ -44,4 +40,3 @@ volumes:
   wordpress_data:
   db_data:
   redis_data:
-  litespeed_data:
